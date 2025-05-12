@@ -1,0 +1,4 @@
+npm init -y
+npm install -D @playwright/test @faker-js/faker
+npx playwright install
+npx playwright test 
