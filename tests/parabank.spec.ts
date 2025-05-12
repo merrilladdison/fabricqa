@@ -1,7 +1,7 @@
 import { test as base, expect } from '@playwright/test';
 import { faker } from '@faker-js/faker';
 
-// Define a fixture to share data between tests
+// Fixture to share data between tests
 type TestFixtures = {
   savingsAccountNumber: string;
   username: string;
@@ -15,15 +15,14 @@ const test = base.extend<TestFixtures>({
   password: ['', { scope: 'test' }]
 });
 
-// Store the data globally for simplicity
-// In a real project, you might use a more robust solution
+// Global data storage for the tests
 const testData = {
   savingsAccountNumber: '',
   username: '',
   password: ''
 };
 
-test.describe('ParaBank User Registration and Login', () => {
+test.describe('ParaBank User Registration, Login and Transactions', () => {
     test('should register new user and login successfully', async ({ page }) => {
         // Step 1: Navigate to ParaBank application
         await page.goto('https://parabank.parasoft.com/');
@@ -62,7 +61,7 @@ test.describe('ParaBank User Registration and Login', () => {
         // Submit registration form
         await page.click('input[value="Register"]');
         
-        // Verify successful registration and auto-login
+        // Verify successful registration
         await expect(page.locator('text=Your account was created successfully. You are now logged in.')).toBeVisible();
         await expect(page.locator(`text=Welcome ${username}`)).toBeVisible();
         
@@ -79,13 +78,11 @@ test.describe('ParaBank User Registration and Login', () => {
 
 
         // 5. Create Savings Account
-        
         await page.click('text=Open New Account');
         await page.selectOption('#type', { label: 'SAVINGS' });
         await page.waitForLoadState('networkidle');
         await page.locator('//input[@value="Open New Account"]').click();
         await page.waitForLoadState('networkidle');
-          // Select by visible text
 
         
         // Verify account creation and capture account number
@@ -121,6 +118,7 @@ test.describe('ParaBank User Registration and Login', () => {
         const transferAmount = '50';
         await page.fill('input#amount', transferAmount);
         await page.selectOption('select#fromAccountId', savingsAccountNumber!);
+
         // Select the first available account that's different from savings account
         const toAccount = await page.locator('select#toAccountId option:not([value="' + savingsAccountNumber + '"])').first();
         const toAccountNumber = await toAccount.getAttribute('value');
@@ -161,23 +159,12 @@ test.describe('ParaBank User Registration and Login', () => {
         await expect(page.locator('text=Bill Payment Complete')).toBeVisible();
         await expect(page.locator(`text=Bill Payment to Test Payee in the amount of $25.00 from account ${savingsAccountNumber}`)).toBeVisible();
 
-        // // Verify account balance after bill payment
-        // await page.click('text=Accounts Overview');
-        // await page.waitForSelector('#accountTable', { state: 'visible' });
-        // const accountRowAfterPayment = page.locator(`#accountTable tr:has(a:text("${savingsAccountNumber}"))`);
-        // await expect(accountRowAfterPayment).toBeVisible();
-        
-        // // Verify Balance is $25.00 after bill payment
-        // const balanceCellAfterPayment = accountRowAfterPayment.locator('td').nth(1);
-        // await expect(balanceCellAfterPayment).toHaveText('$25.00');
-
-        // Store the account number and credentials for later use
+        //Storing data for the api tests
         testData.savingsAccountNumber = savingsAccountNumber;
         testData.username = username;
         testData.password = password;
     });
 
-// ... existing code ...
 
 test.describe('ParaBank API Tests', () => {
     test('should find transactions by date for a specific account', async ({ request }) => {
@@ -193,8 +180,6 @@ test.describe('ParaBank API Tests', () => {
         const username = testData.username;
         const password = testData.password;
         
-        // Skip the test if we don't have an account number or credentials
-        test.skip(!savingsAccountNumber || !username || !password, 'Missing data from previous test');
         
         // 1. Login via API
         const loginResponse = await request.post('https://parabank.parasoft.com/parabank/login.htm', {
@@ -237,9 +222,9 @@ test.describe('ParaBank API Tests', () => {
                 parseFloat(t.amount) === 25.00
             );
             
-            // Log if bill payment transaction is not found
+            // Print out all transactions if we can't find our bill payment
             if (!billPaymentTransaction) {
-                console.log('Bill payment transaction not found. Available transactions:', transactions);
+                console.log('Hmm, can\'t find the bill payment. Here are all the transactions we got:', transactions);
             }
             
             // Validate bill payment transaction
