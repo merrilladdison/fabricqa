@@ -11,7 +11,7 @@ This project contains automated tests for the Parabank demo banking application 
 
 ### Installation Steps
 1. Clone the repository
-git clone [https://your-repo-url.git](https://github.com/merrilladdison/fabricqa.git)
+git clone https://github.com/merrilladdison/fabricqa.git
 
 npm init -y
 npm install -D @playwright/test
